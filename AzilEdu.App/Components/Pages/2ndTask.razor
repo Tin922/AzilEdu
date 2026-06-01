@@ -1,0 +1,21 @@
+@page "/2ndTask"
+@rendermode InteractiveServer
+
+<h3>Counter</h3>
+<p>Coutner is: @counterValue</p>
+<button @onclick = "IncrementCounter">Increment</button>
+<button @onclick="DecrementCounter">Decrement</button>
+
+@code {
+    int counterValue = 0;
+
+    void IncrementCounter()
+    {
+        counterValue++;
+    }
+
+    void DecrementCounter()
+    {
+        counterValue--;
+    }
+}

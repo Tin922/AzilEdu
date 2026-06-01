@@ -1,0 +1,19 @@
+@page "/1stTask"
+@rendermode InteractiveServer
+ 
+<h1>Change color</h1>
+<p class="@buttonClass">The quick brown fox jumps over the lazy dog</p>
+ 
+<button @onclick="ToggleColor">Change color</button>
+ 
+@code {
+    string buttonClass = "class-red";
+ 
+    void ToggleColor()
+    {
+        if (buttonClass == "class-red")
+            buttonClass = "class-green";
+        else
+            buttonClass = "class-red";
+    }
+}

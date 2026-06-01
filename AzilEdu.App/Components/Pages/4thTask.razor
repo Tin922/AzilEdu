@@ -1,0 +1,19 @@
+@page "/4thTask"
+@rendermode InteractiveServer
+
+<h3>HiddenMessage</h3>
+
+@if (isHidden)
+{
+    <p>Some text</p>
+}
+<button onclick="@ToggleHidden">Toggle hidden text</button>
+
+@code {
+    bool isHidden = false;
+
+    void ToggleHidden()
+    {
+        isHidden = !isHidden;
+    }
+}

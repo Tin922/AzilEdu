@@ -1,0 +1,18 @@
+@page "/5thTask"
+
+<h3>Games</h3>
+<ul>
+    @foreach (string game in games)
+    {
+        <li>@game</li>
+    }
+</ul>
+@code {
+
+    List<string> games = new()
+    {
+        "Counter Strike",
+        "League of Legends",
+        "Minecraft",
+    };
+}
