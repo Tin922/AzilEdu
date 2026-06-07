@@ -11,4 +11,15 @@
     <ProjectReference Include="..\AzilEdu.Shared\AzilEdu.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="MudBlazor" Version="9.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\images\brid.webp" />
+    <None Include="wwwroot\images\cat.jpg" />
+    <None Include="wwwroot\images\dog.jpg" />
+    <None Include="wwwroot\images\hamster.jpg" />
+  </ItemGroup>
+
 </Project>
