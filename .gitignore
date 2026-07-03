@@ -360,4 +360,12 @@ MigrationBackup/
 .ionide/
 
 # Fody - auto-generated XML schema
-FodyWeavers.xsd
+FodyWeavers.xsd.idea/
+
+# Local database
+*.db
+*.db-shm
+*.db-wal
+
+# JetBrains Rider
+.idea/

@@ -1,6 +1,7 @@
 @page "/housing-units"
 @rendermode InteractiveServer
-
+@using System.Net.Http.Json
+@inject HttpClient Http
 @using AzilEdu.Shared.Models
 
 <MudText Typo="Typo.h4" GutterBottom="true">Smještajne jedinice</MudText>
@@ -80,82 +81,14 @@
 </MudTable>
 
 @code {
+    
+private List<HousingUnit> housingUnits = new();
 
-private List<HousingUnit> housingUnits = new()
+protected override async Task OnInitializedAsync()
 {
-    new HousingUnit
-    {
-        Id = 1,
-        Name = "Boks A1",
-        UnitType = "Boks",
-        Capacity = 2,
-        Occupied = 2,              
-        LastCleanedAt = new DateTime(2026, 6, 10),
-        IsActive = true,
-        ImageUrl = "/images/units/boks-a1.webp",
-        Note = "Rezervirano za velike pasmine."
-    },
-    new HousingUnit
-    {
-        Id = 2,
-        Name = "Boks A2",
-        UnitType = "Boks",
-        Capacity = 2,
-        Occupied = 1,             
-        LastCleanedAt = new DateTime(2026, 6, 14),
-        IsActive = true,
-        ImageUrl = "/images/units/boks-a2.webp",
-        Note = null
-    },
-    new HousingUnit
-    {
-        Id = 3,
-        Name = "Soba M1",
-        UnitType = "Soba",
-        Capacity = 4,
-        Occupied = 2,
-        LastCleanedAt = null,      
-        IsActive = true,
-        ImageUrl = "/images/units/soba-m1.webp",
-        Note = "Prostor za mačke, tiši dio azila."
-    },
-    new HousingUnit
-    {
-        Id = 4,
-        Name = "Karantena K1",
-        UnitType = "Karantena",
-        Capacity = 3,
-        Occupied = 1,
-        LastCleanedAt = new DateTime(2026, 6, 15),
-        IsActive = true,
-        ImageUrl = "/images/units/karantena-k1.webp",
-        Note = "Samo za novoprimljene životinje."
-    },
-    new HousingUnit
-    {
-        Id = 5,
-        Name = "Boks B1",
-        UnitType = "Boks",
-        Capacity = 2,
-        Occupied = 0,
-        LastCleanedAt = new DateTime(2026, 5, 20),
-        IsActive = false,           
-        ImageUrl = "/images/units/boks-b1.webp",
-        Note = "Privremeno van upotrebe zbog renovacije."
-    },
-    new HousingUnit
-    {
-        Id = 6,
-        Name = "Soba M2",
-        UnitType = "Soba",
-        Capacity = 5,
-        Occupied = 3,
-        LastCleanedAt = new DateTime(2026, 6, 12),
-        IsActive = true,
-        ImageUrl = "/images/units/soba-m2.webp",
-        Note = null
-    }
-};
+    List<HousingUnit>? result = await Http.GetFromJsonAsync<List<HousingUnit>>("api/HousingUnits");
+    housingUnits = result ?? new List<HousingUnit>();
+}
 
 private int TotalHousing => housingUnits.Count;
 private int ActiveHousing => housingUnits.Count(h => h.IsActive);
