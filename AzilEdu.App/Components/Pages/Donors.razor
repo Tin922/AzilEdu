@@ -1,0 +1,67 @@
+@page "/donors"
+@rendermode InteractiveServer
+@using AzilEdu.Shared.DTOs
+@inject HttpClient Http
+
+<MudText Typo="Typo.h4" GutterBottom="true">Donatori</MudText>
+<MudPaper Class="pa-4 mb-4">
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudTextField @bind-Value="search" Label="Pretraži" Immediate="true" Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudSelect T="string" Label="Status" @bind-Value="selectedStatus" Clearable="true" Variant="Variant.Outlined">
+                @foreach (var s in statusList) { <MudSelectItem Value="@s.Name">@s.Name</MudSelectItem> }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="2" Class="d-flex align-center">
+            <MudButton Variant="Variant.Outlined" OnClick="Reset">Očisti</MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable Items="@items" Filter="Filter" Hover="true" Striped="true" Bordered="true" Dense="true">
+    <HeaderContent>
+        <MudTh>Naziv / Ime</MudTh>
+        <MudTh>Tip</MudTh>
+        <MudTh>Email</MudTh>
+        <MudTh>Grad</MudTh>
+        <MudTh>Status</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@(string.IsNullOrWhiteSpace(context.OrganizationName) ? $"{context.FirstName} {context.LastName}" : context.OrganizationName)</MudTd>
+        <MudTd>@context.Type</MudTd>
+        <MudTd>@context.Email</MudTd>
+        <MudTd>@context.City</MudTd>
+        <MudTd><MudChip T="string">@context.Status</MudChip></MudTd>
+    </RowTemplate>
+    <NoRecordsContent><MudText Class="pa-4">Nema rezultata.</MudText></NoRecordsContent>
+</MudTable>
+
+@code {
+    private List<DonorDto> items = new();
+    private List<LookupDto> statusList = new();
+    private string search = string.Empty;
+    private string? selectedStatus;
+
+    protected override async Task OnInitializedAsync()
+    {
+        items = await Http.GetFromJsonAsync<List<DonorDto>>("api/donors") ?? new();
+        statusList = await Http.GetFromJsonAsync<List<LookupDto>>("api/donorstatuses") ?? new();
+    }
+
+    private bool Filter(DonorDto d)
+    {
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var t = search.Trim().ToLower();
+            if (!(d.FirstName.ToLower().Contains(t) || d.LastName.ToLower().Contains(t) || d.OrganizationName.ToLower().Contains(t) || d.Email.ToLower().Contains(t) || d.City.ToLower().Contains(t)))
+                return false;
+        }
+        if (!string.IsNullOrWhiteSpace(selectedStatus) && !string.Equals(d.Status, selectedStatus, StringComparison.OrdinalIgnoreCase))
+            return false;
+        return true;
+    }
+
+    private void Reset() { search = string.Empty; selectedStatus = null; }
+}

@@ -1,0 +1,67 @@
+@page "/employees"
+@rendermode InteractiveServer
+@using AzilEdu.Shared.DTOs
+@inject HttpClient Http
+
+<MudText Typo="Typo.h4" GutterBottom="true">Djelatnici</MudText>
+<MudPaper Class="pa-4 mb-4">
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudTextField @bind-Value="search" Label="Pretraži" Immediate="true" Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudSelect T="string" Label="Status" @bind-Value="selectedStatus" Clearable="true" Variant="Variant.Outlined">
+                @foreach (var s in statusList) { <MudSelectItem Value="@s.Name">@s.Name</MudSelectItem> }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="2" Class="d-flex align-center">
+            <MudButton Variant="Variant.Outlined" OnClick="Reset">Očisti</MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable Items="@items" Filter="Filter" Hover="true" Striped="true" Bordered="true" Dense="true">
+    <HeaderContent>
+        <MudTh>Prezime</MudTh>
+        <MudTh>Ime</MudTh>
+        <MudTh>Broj djelatnika</MudTh>
+        <MudTh>Pozicija</MudTh>
+        <MudTh>Status</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.LastName</MudTd>
+        <MudTd>@context.FirstName</MudTd>
+        <MudTd>@context.EmployeeNumber</MudTd>
+        <MudTd>@context.Position</MudTd>
+        <MudTd><MudChip T="string">@context.Status</MudChip></MudTd>
+    </RowTemplate>
+    <NoRecordsContent><MudText Class="pa-4">Nema rezultata.</MudText></NoRecordsContent>
+</MudTable>
+
+@code {
+    private List<EmployeeDto> items = new();
+    private List<LookupDto> statusList = new();
+    private string search = string.Empty;
+    private string? selectedStatus;
+
+    protected override async Task OnInitializedAsync()
+    {
+        items = await Http.GetFromJsonAsync<List<EmployeeDto>>("api/employees") ?? new();
+        statusList = await Http.GetFromJsonAsync<List<LookupDto>>("api/employeestatuses") ?? new();
+    }
+
+    private bool Filter(EmployeeDto e)
+    {
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var t = search.Trim().ToLower();
+            if (!(e.FirstName.ToLower().Contains(t) || e.LastName.ToLower().Contains(t) || e.EmployeeNumber.ToLower().Contains(t) || e.Email.ToLower().Contains(t)))
+                return false;
+        }
+        if (!string.IsNullOrWhiteSpace(selectedStatus) && !string.Equals(e.Status, selectedStatus, StringComparison.OrdinalIgnoreCase))
+            return false;
+        return true;
+    }
+
+    private void Reset() { search = string.Empty; selectedStatus = null; }
+}

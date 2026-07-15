@@ -1,0 +1,49 @@
+@page "/volunteers/edit/{Id:int}"
+@rendermode InteractiveServer
+@using AzilEdu.Shared.DTOs
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<MudText Typo="Typo.h4" GutterBottom="true">Uredi volontera</MudText>
+<MudStack Spacing="2">
+    <MudTextField @bind-Value="model.FirstName" Label="Ime" Required="true" />
+    <MudTextField @bind-Value="model.LastName" Label="Prezime" Required="true" />
+    <MudTextField @bind-Value="model.Email" Label="Email" />
+    <MudTextField @bind-Value="model.Phone" Label="Telefon" />
+    <MudTextField @bind-Value="model.Skills" Label="Vještine" />
+    <MudDatePicker @bind-Date="availableFrom" Label="Dostupan od" />
+    <MudSelect T="int" Label="Status" @bind-Value="model.VolunteerStatusId" Required="true" Variant="Variant.Outlined">
+        @foreach (var s in statusList) { <MudSelectItem Value="@s.Id">@s.Name</MudSelectItem> }
+    </MudSelect>
+    <MudTextField @bind-Value="model.Notes" Label="Napomena" Lines="3" />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save">Spremi</MudButton>
+</MudStack>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private SaveVolunteerDto model = new();
+    private List<LookupDto> statusList = new();
+    private DateTime? availableFrom;
+
+    protected override async Task OnInitializedAsync()
+    {
+        statusList = await Http.GetFromJsonAsync<List<LookupDto>>("api/volunteerstatuses") ?? new();
+        var v = await Http.GetFromJsonAsync<VolunteerDto>($"api/volunteers/{Id}");
+        if (v is not null)
+        {
+            model = new SaveVolunteerDto
+            {
+                FirstName = v.FirstName, LastName = v.LastName, Email = v.Email, Phone = v.Phone,
+                Skills = v.Skills, AvailableFrom = v.AvailableFrom, Notes = v.Notes, VolunteerStatusId = v.VolunteerStatusId
+            };
+            availableFrom = v.AvailableFrom;
+        }
+    }
+
+    private async Task Save()
+    {
+        model.AvailableFrom = availableFrom;
+        if ((await Http.PutAsJsonAsync($"api/volunteers/{Id}", model)).IsSuccessStatusCode)
+            Navigation.NavigateTo("/volunteers");
+    }
+}
