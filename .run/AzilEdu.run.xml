@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="true" name="AzilEdu" type="CompoundRunConfigurationType" factoryName="Compound Run Configuration">
+    <toRun name="AzilEdu.Api" type="LaunchSettings" />
+    <toRun name="AzilEdu.App" type="LaunchSettings" />
+    <method v="2" />
+  </configuration>
+</component>

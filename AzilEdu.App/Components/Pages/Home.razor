@@ -1,5 +1,156 @@
-﻿@page "/"
+@page "/"
+@rendermode InteractiveServer
 
-<PageTitle>Home</PageTitle>
+@using AzilEdu.Shared.DTOs
+@using System.Net.Http.Json
+@using MudBlazor
 
-<h1>Welcome to AzilEdu App!</h1>
+@inject HttpClient Http
+
+<MudText Typo="Typo.h3" Class="mb-2">AzilEdu</MudText>
+<MudText Typo="Typo.body1" Class="mb-6">Pregled trenutnog stanja azila.</MudText>
+
+@if (isLoading)
+{
+    <div class="d-flex justify-center my-6">
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+}
+else if (summary is null)
+{
+    <MudAlert Severity="Severity.Warning" Class="mb-4">Sažetak nije dostupan.</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="4" lg="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.subtitle2">Ukupno životinja</MudText>
+                <MudText Typo="Typo.h4">@summary.AnimalsCount</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.subtitle2">Dostupno za udomljenje</MudText>
+                <MudText Typo="Typo.h4">@summary.AvailableAnimalsCount</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.subtitle2">Aktivni volonteri</MudText>
+                <MudText Typo="Typo.h4">@summary.ActiveVolunteersCount</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.subtitle2">Otvoreni zadaci</MudText>
+                <MudText Typo="Typo.h4">@summary.OpenVolunteerTasksCount</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.subtitle2">Aktivni donatori</MudText>
+                <MudText Typo="Typo.h4">@summary.ActiveDonorsCount</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.subtitle2">Djelatnici</MudText>
+                <MudText Typo="Typo.h4">@summary.EmployeesCount</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.subtitle2">Ukupno donacija</MudText>
+                <MudText Typo="Typo.h4">@summary.DonationsCount</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.subtitle2">Donacije na čekanju</MudText>
+                <MudText Typo="Typo.h4">@summary.PendingDonationsCount</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.subtitle2">Novčani iznos donacija</MudText>
+                <MudText Typo="Typo.h4">@summary.MoneyDonationsTotal.ToString("N2") EUR</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.subtitle2">Materijalne donacije</MudText>
+                <MudText Typo="Typo.h4">@summary.EstimatedMaterialDonationsTotal.ToString("N2") EUR</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4" lg="3">
+            <MudPaper Class="pa-4" Elevation="2" Style="border-left: 4px solid var(--mud-palette-error);">
+                <MudText Typo="Typo.subtitle2">Zadaci s prošlim rokom</MudText>
+                <MudText Typo="Typo.h4" Color="Color.Error">@summary.OverdueVolunteerTasksCount</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudPaper Class="pa-4 mt-6" Elevation="1">
+        <MudText Typo="Typo.h6" Class="mb-3">Zadnjih 5 donacija</MudText>
+
+        @if (recentDonations.Count == 0)
+        {
+            <MudText Typo="Typo.body2">Još nema evidentiranih donacija.</MudText>
+        }
+        else
+        {
+            <MudTable Items="recentDonations" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>Datum</MudTh>
+                    <MudTh>Donator</MudTh>
+                    <MudTh>Tip</MudTh>
+                    <MudTh>Vrijednost</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.DonationDate.ToString("dd.MM.yyyy.")</MudTd>
+                    <MudTd>@context.DonorName</MudTd>
+                    <MudTd>@context.DonationType</MudTd>
+                    <MudTd>
+                        @if (context.Amount.HasValue)
+                        {
+                            @context.Amount.Value.ToString("N2") @:EUR
+                        }
+                        else
+                        {
+                            @context.ItemName
+                        }
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+}
+
+@code {
+    private DashboardSummaryDto? summary;
+    private List<RecentDonationDto> recentDonations = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            summary = await Http.GetFromJsonAsync<DashboardSummaryDto>("api/dashboard/summary");
+            recentDonations = await Http.GetFromJsonAsync<List<RecentDonationDto>>("api/dashboard/recent-donations") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Greška kod učitavanja dashboarda: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
