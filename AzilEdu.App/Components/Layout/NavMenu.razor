@@ -1,55 +1,93 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">AzilEdu.App</a>
-    </div>
-</div>
+@using AzilEdu.App.Services
+@inject CurrentUserService CurrentUser
+@inject NavigationManager Navigation
+@implements IDisposable
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+@if (!CurrentUser.IsLoggedIn)
+{
+    <MudNavLink Href="/login" Icon="@Icons.Material.Filled.Login">
+        Prijava
+    </MudNavLink>
+}
+else
+{
+    <MudNavLink Href="/" Icon="@Icons.Material.Filled.Dashboard">
+        Dashboard
+    </MudNavLink>
+ 
+    @if (CurrentUser.HasAnyRole("Admin", "Employee"))
+    {
+        <MudNavLink Href="/animals" Icon="@Icons.Material.Filled.Pets">
+            Životinje
+        </MudNavLink>
+ 
+        <MudNavLink Href="/volunteer-tasks" Icon="@Icons.Material.Filled.Assignment">
+            Zadaci
+        </MudNavLink>
+ 
+        <MudNavLink Href="/donors" Icon="@Icons.Material.Filled.Favorite">
+            Donatori
+        </MudNavLink>
+ 
+        <MudNavLink Href="/donations" Icon="@Icons.Material.Filled.Payments">
+            Donacije
+        </MudNavLink>
+    }
+ 
+    @if (CurrentUser.HasRole("Admin"))
+    {
+        <MudNavLink Href="/employees" Icon="@Icons.Material.Filled.Badge">
+            Djelatnici
+        </MudNavLink>
+    }
+ 
+    @if (CurrentUser.HasRole("Volunteer"))
+    {
+        <MudNavLink Href="/my-tasks" Icon="@Icons.Material.Filled.AssignmentInd">
+            Moji zadaci
+        </MudNavLink>
+    }
+ 
+    @if (CurrentUser.HasRole("Donor"))
+    {
+        <MudNavLink Href="/my-donations" Icon="@Icons.Material.Filled.CardGiftcard">
+            Moje donacije
+        </MudNavLink>
+    }
+ 
+    <MudDivider Class="my-2" />
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+    <MudStack Spacing="0" Class="px-4 py-2">
+        <MudText Typo="Typo.body2">@CurrentUser.User?.DisplayName</MudText>
+        <MudText Typo="Typo.caption" Class="mud-text-secondary">
+            @(CurrentUser.User is null ? "" : string.Join(", ", CurrentUser.User.Roles))
+        </MudText>
+    </MudStack>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="1stTask">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Color change
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="2ndTask">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="3rdTask">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Name and Surname
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-        <NavLink class="nav-link" href="4thTask">
-            <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Hidden Message
-        </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="5thTask">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Games
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="6thTask">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> To Do List
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="7thTask">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Status card
-            </NavLink>
-        </div>
-    </nav>
-</div>
-
+    <MudNavLink Icon="@Icons.Material.Filled.Logout"
+                OnClick="HandleLogout">
+        Odjava
+    </MudNavLink>
+}
+@code {
+    protected override void OnInitialized()
+    {
+        CurrentUser.UserChanged += HandleUserChanged;
+    }
+ 
+    private void HandleUserChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+ 
+    private void HandleLogout()
+    {
+        CurrentUser.Logout();
+        Navigation.NavigateTo("/login");
+    }
+ 
+    public void Dispose()
+    {
+        CurrentUser.UserChanged -= HandleUserChanged;
+    }
+}

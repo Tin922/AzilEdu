@@ -363,3 +363,13 @@ MigrationBackup/
 FodyWeavers.xsd
 
 .idea/
+
+# SQLite local databases (recreated from migrations)
+*.db
+*.db-shm
+*.db-wal
+db-backups/
+
+# Uploaded animal media (keep folder, ignore files)
+AzilEdu.Api/wwwroot/uploads/animals/*
+!AzilEdu.Api/wwwroot/uploads/animals/.gitkeep

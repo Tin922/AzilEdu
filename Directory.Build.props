@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Arch Linux dotnet install has broken workload manifests; Rider/MSBuild need this. -->
+    <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
+  </PropertyGroup>
+</Project>

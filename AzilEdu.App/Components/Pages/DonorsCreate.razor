@@ -1,0 +1,107 @@
+@page "/donors/create"
+@rendermode InteractiveServer
+@using AzilEdu.Shared.DTOs
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<MudText Typo="Typo.h4" GutterBottom="true">Novi donator</MudText>
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+}
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.body2">
+        Upiši ime i prezime za fizičku osobu ili naziv organizacije za pravnu osobu.
+    </MudText>
+    <MudTextField @bind-Value="model.FirstName" Label="Ime" />
+    <MudTextField @bind-Value="model.LastName" Label="Prezime" />
+    <MudTextField @bind-Value="model.OrganizationName" Label="Naziv organizacije" />
+    <MudTextField @bind-Value="model.Email" Label="Email" />
+    <MudTextField @bind-Value="model.Phone" Label="Telefon" />
+    <MudTextField @bind-Value="model.Address" Label="Adresa" />
+    <MudTextField @bind-Value="model.City" Label="Grad" />
+
+    <MudSelect T="int" Label="Tip donatora" @bind-Value="model.DonorTypeId" Required="true">
+        @foreach (var type in types)
+        {
+            <MudSelectItem Value="@type.Id">@type.Name</MudSelectItem>
+        }
+    </MudSelect>
+
+    <MudSelect T="int" Label="Status" @bind-Value="model.DonorStatusId" Required="true">
+        @foreach (var status in statuses)
+        {
+            <MudSelectItem Value="@status.Id">@status.Name</MudSelectItem>
+        }
+    </MudSelect>
+
+    <MudTextField @bind-Value="model.Notes" Label="Napomena" Lines="3" />
+
+    <MudStack Row="true" Spacing="2">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveDonor">
+            Spremi
+        </MudButton>
+        <MudButton Variant="Variant.Text" Href="/donors">
+            Odustani
+        </MudButton>
+    </MudStack>
+</MudStack>
+
+@code {
+    private SaveDonorDto model = new();
+    private List<LookupDto> types = new();
+    private List<LookupDto> statuses = new();
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        types = await Http.GetFromJsonAsync<List<LookupDto>>("api/donortypes") ?? new();
+        statuses = await Http.GetFromJsonAsync<List<LookupDto>>("api/donorstatuses") ?? new();
+
+        if (types.Count > 0)
+            model.DonorTypeId = types[0].Id;
+
+        if (statuses.Count > 0)
+            model.DonorStatusId = statuses[0].Id;
+    }
+
+    private async Task SaveDonor()
+    {
+        errorMessage = null;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/donors", model);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/donors");
+                return;
+            }
+
+            errorMessage = await ReadErrorMessage(response);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Greška kod spremanja donatora: {ex.Message}";
+        }
+    }
+
+    private static async Task<string> ReadErrorMessage(HttpResponseMessage response)
+    {
+        try
+        {
+            var message = await response.Content.ReadFromJsonAsync<string>();
+            return string.IsNullOrWhiteSpace(message)
+                ? "Donatora nije moguće spremiti."
+                : message;
+        }
+        catch
+        {
+            return "Donatora nije moguće spremiti.";
+        }
+    }
+}
