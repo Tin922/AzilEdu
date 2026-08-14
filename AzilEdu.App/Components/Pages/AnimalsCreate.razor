@@ -1,0 +1,267 @@
+@page "/animals/create"
+@rendermode InteractiveServer
+@using AzilEdu.Shared.DTOs
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<MudText Typo="Typo.h4" GutterBottom="true">Nova životinja</MudText>
+<MudText Typo="Typo.body1" Class="mb-4">
+    Na ovoj stranici unosimo novu životinju i podatke šaljemo prema API-ju preko POST zahtjeva.
+</MudText>
+
+@if (!string.IsNullOrWhiteSpace(statusMessage))
+{
+    <MudAlert Severity="Severity.Info" Class="mb-4">
+        @statusMessage
+    </MudAlert>
+}
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">
+        @errorMessage
+    </MudAlert>
+}
+<MudPaper Class="pa-4 mb-4" Elevation="1">
+    <MudText Typo="Typo.h6" Class="mb-2">Pametni unos iz bilješke</MudText>
+    <MudTextField @bind-Value="intakeNote"
+                  Label="Bilješka s terena"
+                  Placeholder="Primjer: Danas pronađena ženka psa, oko dvije godine..."
+                  Lines="3"
+                  Variant="Variant.Outlined"
+                  Immediate="true" />
+    @if (isSuggestingIntake)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Secondary" Class="mt-2" />
+    }
+    <MudButton ButtonType="ButtonType.Button"
+               OnClick="SuggestIntake"
+               Variant="Variant.Outlined"
+               Color="Color.Secondary"
+               Class="mt-2"
+               Disabled="isSuggestingIntake">
+        @(isSuggestingIntake ? "Analiziram..." : "AI popuni formu")
+    </MudButton>
+ 
+    @if (intakeSuggestion is not null)
+    {
+        <MudAlert Severity="@(intakeSuggestion.Warnings.Count == 0 ? Severity.Success : Severity.Info)"
+                  Class="mt-3">
+            Pouzdanost prijedloga: @($"{intakeSuggestion.Confidence:P0}").
+            @if (intakeSuggestion.Warnings.Count == 0)
+            {
+                <MudText Typo="Typo.body2">Svi ključni podaci prepoznati — pregledaj formu prije spremanja.</MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2">Provjeri sva polja prije spremanja.</MudText>
+                @foreach (var warning in intakeSuggestion.Warnings)
+                {
+                    <MudText Typo="Typo.body2">• @warning</MudText>
+                }
+            }
+        </MudAlert>
+        <MudButton OnClick="DiscardIntakeSuggestion"
+                   Variant="Variant.Text"
+                   Color="Color.Secondary"
+                   Class="mt-2">
+            Odbaci prijedlog
+        </MudButton>
+    }
+</MudPaper>
+
+<MudStack Spacing="2">
+    <MudTextField @bind-Value="model.Name" Label="Ime" Required="true" Immediate="true" />
+    <MudTextField @bind-Value="model.Species" Label="Vrsta" Required="true" Immediate="true" />
+    <MudTextField @bind-Value="model.Breed" Label="Pasmina" Immediate="true" />
+    <MudTextField @bind-Value="model.Gender" Label="Spol" Immediate="true" />
+    <MudNumericField @bind-Value="model.Age" Label="Dob" />
+    <MudDatePicker @bind-Date="arrivalDate" Label="Datum dolaska" />
+
+    <MudSelect T="int"
+               Label="Status"
+               @bind-Value="model.AnimalStatusId"
+               Variant="Variant.Outlined"
+               Required="true">
+        @foreach (var status in statusList)
+        {
+            <MudSelectItem Value="@status.Id">@status.Name</MudSelectItem>
+        }
+    </MudSelect>
+
+    <MudTextField @bind-Value="model.ImageUrl" Label="Putanja slike" Immediate="true" />
+    <MudTextField @bind-Value="model.Description" Label="Opis" Lines="3" Immediate="true" />
+
+    <MudButton ButtonType="ButtonType.Button"
+               OnClick="SaveAnimal"
+               Variant="Variant.Filled"
+               Color="Color.Primary">
+        Spremi
+    </MudButton>
+</MudStack>
+
+@code {
+    private string? statusMessage;
+    private string? errorMessage;
+    private int saveClickCount;
+
+    private string intakeNote = string.Empty;
+    private AnimalIntakeSuggestionDto? intakeSuggestion;
+    private bool isSuggestingIntake;
+ 
+    private async Task SuggestIntake()
+    {
+        statusMessage = null;
+
+        if (string.IsNullOrWhiteSpace(intakeNote))
+        {
+            errorMessage = "Upiši bilješku koju AI treba analizirati.";
+            return;
+        }
+
+        isSuggestingIntake = true;
+        errorMessage = null;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync(
+                "api/ai/animal-intake",
+                new AiFreeTextRequestDto { Text = intakeNote.Trim() });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ReadApiErrorAsync(response);
+                return;
+            }
+
+            intakeSuggestion = await response.Content
+                .ReadFromJsonAsync<AnimalIntakeSuggestionDto>();
+
+            if (intakeSuggestion is null)
+            {
+                errorMessage = "API nije vratio AI prijedlog.";
+                return;
+            }
+
+            model.Name = intakeSuggestion.Name;
+            model.Species = intakeSuggestion.Species;
+            model.Breed = intakeSuggestion.Breed;
+            model.Gender = intakeSuggestion.Gender;
+            model.Age = intakeSuggestion.Age;
+            model.AnimalStatusId = intakeSuggestion.AnimalStatusId > 0
+                ? intakeSuggestion.AnimalStatusId
+                : model.AnimalStatusId;
+            model.Description = intakeSuggestion.Description;
+            arrivalDate = intakeSuggestion.ArrivalDate;
+            statusMessage = "AI je popunio formu. Provjeri sva polja prije spremanja.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message.Contains("Connection refused", StringComparison.OrdinalIgnoreCase)
+                ? "API nije dostupan. Pokreni AzilEdu.Api na https://localhost:7205."
+                : $"AI prijedlog nije dostupan: {ex.Message}";
+        }
+        finally
+        {
+            isSuggestingIntake = false;
+        }
+    }
+
+    private static async Task<string> ReadApiErrorAsync(HttpResponseMessage response)
+    {
+        var body = await response.Content.ReadAsStringAsync();
+
+        if (string.IsNullOrWhiteSpace(body))
+            return $"AI zahtjev nije uspio. Status: {(int)response.StatusCode}.";
+
+        if (body.StartsWith('{'))
+        {
+            try
+            {
+                using var document = System.Text.Json.JsonDocument.Parse(body);
+                if (document.RootElement.TryGetProperty("detail", out var detail))
+                    return detail.GetString() ?? body;
+                if (document.RootElement.TryGetProperty("title", out var title))
+                    return title.GetString() ?? body;
+            }
+            catch
+            {
+                // fallback to raw body
+            }
+        }
+
+        return body.Trim('"');
+    }
+
+    private void DiscardIntakeSuggestion()
+    {
+        intakeSuggestion = null;
+    }
+
+    private List<LookupDto> statusList = new();
+
+    private SaveAnimalDto model = new()
+    {
+        ArrivalDate = DateTime.Today,
+        ImageUrl = "/images/animals/placeholder.svg"
+    };
+
+    private DateTime? arrivalDate = DateTime.Today;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            statusList = await Http.GetFromJsonAsync<List<LookupDto>>("api/animalstatuses") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message.Contains("Connection refused", StringComparison.OrdinalIgnoreCase)
+                ? "API nije dostupan. Pokreni AzilEdu.Api na https://localhost:7205."
+                : $"Nije moguće učitati statuse: {ex.Message}";
+            statusList = new();
+        }
+
+        if (model.AnimalStatusId == 0 && statusList.Count > 0)
+            model.AnimalStatusId = statusList[0].Id;
+    }
+
+    private async Task SaveAnimal()
+    {
+        try
+        {
+            saveClickCount++;
+            statusMessage = $"Klik na spremanje je primljen ({saveClickCount}).";
+            errorMessage = null;
+
+            if (string.IsNullOrWhiteSpace(model.Name) || string.IsNullOrWhiteSpace(model.Species))
+            {
+                errorMessage = "Upiši barem obavezna polja: ime i vrstu.";
+                return;
+            }
+
+            if (model.AnimalStatusId == 0)
+            {
+                errorMessage = "Odaberi status životinje.";
+                return;
+            }
+
+            model.ArrivalDate = arrivalDate;
+
+            var response = await Http.PostAsJsonAsync("api/animals", model);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/animals");
+                return;
+            }
+
+            errorMessage = $"Spremanje nije uspjelo. Status: {(int)response.StatusCode}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Greška kod spremanja: {ex.Message}";
+        }
+    }
+}

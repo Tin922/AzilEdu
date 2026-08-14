@@ -1,0 +1,97 @@
+AzilEdu Lekcija 9 — brzi vodič za testiranje
+============================================
+Lokacija projekta:
+/run/media/tin/74CA1ED3CA1E918A/AzilEdu6/AzilEdu-Lekcija09-polazno
+
+Pokretanje
+----------
+Terminal 1 (API):
+  cd AzilEdu.Api
+  dotnet user-secrets set "Ai:Provider" "Mock"    ← preporučeno za AI demo
+  dotnet run --launch-profile https
+
+Terminal 2 (App):
+  cd AzilEdu.App
+  dotnet run --launch-profile https
+
+URL:
+  App → https://localhost:7094
+  API → https://localhost:7205/swagger
+
+Build prije predaje:
+  dotnet build AzilEdu.sln
+
+Demo računi (lozinke u AppUserSeeder.cs)
+----------------------------------------
+admin@aziledu.local      → Admin + User
+employee@aziledu.local   → Employee + User
+volunteer@aziledu.local  → Volunteer + User (Ana Horvat, volonter id 1)
+donor@aziledu.local      → Donor + User
+
+Novi test korisnik (kreiran):
+test.korisnik@aziledu.local → User + Employee + Donor
+
+Seed zadaci za volontera (Ana)
+------------------------------
+1. Šetnja s Lunom        — status Dodijeljen, rok za 2 dana
+2. Hranjenje mačaka      — status U tijeku, rok jučer (zakašnjelo)
+
+Test po ulozi
+-------------
+
+ADMIN
+  [ ] /users — kreiranje korisnika s 2+ uloge
+  [ ] Dashboard + AI dnevni sažetak
+  [ ] Sve staff stranice
+
+EMPLOYEE
+  [ ] Navigacija: Dashboard, Životinje, Zadaci, Volonteri, Donatori, Donacije
+  [ ] Profil životinje: upload slika + video, naslovna slika
+  [ ] AI: opis, objava, pametni unos, provjera podataka
+  [ ] Brisanje s potvrdom
+
+VOLUNTEER (volunteer@aziledu.local)
+  [ ] /my-tasks — vidi 2 dodijeljena zadatka (ne 403!)
+  [ ] AI sažetak mojih zadataka
+  [ ] NE vidi: /donations, /volunteer-tasks (staff), upload na profilu
+
+DONOR
+  [ ] /my-donations — samo svoje donacije (api/donations/mine)
+  [ ] NE vidi staff liste
+
+Auth testovi (Swagger ili curl)
+-------------------------------
+GET  /api/animals              bez tokena → 401
+GET  /api/animals              employee   → 200
+POST /api/animals              donor      → 403
+GET  /api/donations/mine       donor      → 200
+GET  /api/volunteertasks       volunteer  → 403
+GET  /api/volunteertasks/mine  volunteer  → 200
+GET  /api/users                employee   → 403
+GET  /api/users                admin      → 200
+
+AI (Mock provider)
+------------------
+  [ ] Dnevni sažetak (Home)
+  [ ] AI opis + provjera (Uredi životinju)
+  [ ] Pametni unos (Nova životinja)
+  [ ] Objava (Profil životinje)
+  [ ] Zahvala (Uredi donaciju)
+  [ ] Sažetak zadataka (Moji zadaci)
+  [ ] Barem jedan prijedlog ODBACI prije spremanja
+
+UX provjera
+-----------
+  [ ] Loading spinner na listama
+  [ ] Empty stanje (filter bez rezultata)
+  [ ] Error alert (ugasi API pa osvježi)
+  [ ] Odjava na dnu lijevog izbornika
+
+Poznati fixevi u ovoj verziji
+-----------------------------
+- Link Volonteri dodan u NavMenu
+- MyTasks koristi api/volunteertasks/mine (ne staff endpoint)
+- MyDonations koristi api/donations/mine
+- Seed volonterskih zadataka u Program.cs
+
+Dokumentacija: README.md u korijenu projekta

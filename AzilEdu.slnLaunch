@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Pokreni API i App",
+    "Projects": [
+      {
+        "Path": "AzilEdu.Api\\AzilEdu.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "AzilEdu.App\\AzilEdu.App.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

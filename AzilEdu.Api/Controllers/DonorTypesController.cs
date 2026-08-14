@@ -1,0 +1,35 @@
+using AzilEdu.Api.Data;
+using AzilEdu.Shared.DTOs;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace AzilEdu.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Microsoft.AspNetCore.Authorization.Authorize(
+    Policy = AzilEdu.Api.Security.AuthorizationPolicies.Staff)]
+public class DonorTypesController : ControllerBase
+{
+    private readonly AzilEduDbContext _context;
+
+    public DonorTypesController(AzilEduDbContext context)
+    {
+        _context = context;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<List<LookupDto>>> GetDonorTypes()
+    {
+        var types = await _context.DonorTypes
+            .OrderBy(type => type.Id)
+            .Select(type => new LookupDto
+            {
+                Id = type.Id,
+                Name = type.Name
+            })
+            .ToListAsync();
+
+        return Ok(types);
+    }
+}

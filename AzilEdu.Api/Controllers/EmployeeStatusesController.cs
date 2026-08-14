@@ -1,0 +1,35 @@
+using AzilEdu.Api.Data;
+using AzilEdu.Shared.DTOs;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace AzilEdu.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Microsoft.AspNetCore.Authorization.Authorize(
+    Policy = AzilEdu.Api.Security.AuthorizationPolicies.AdminOnly)]
+public class EmployeeStatusesController : ControllerBase
+{
+    private readonly AzilEduDbContext _context;
+
+    public EmployeeStatusesController(AzilEduDbContext context)
+    {
+        _context = context;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<List<LookupDto>>> GetEmployeeStatuses()
+    {
+        var statuses = await _context.EmployeeStatuses
+            .OrderBy(status => status.Id)
+            .Select(status => new LookupDto
+            {
+                Id = status.Id,
+                Name = status.Name
+            })
+            .ToListAsync();
+
+        return Ok(statuses);
+    }
+}
